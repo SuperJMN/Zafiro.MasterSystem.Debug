@@ -1,7 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup><TargetFramework>net10.0</TargetFramework><IsPackable>false</IsPackable></PropertyGroup>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <PackageId>Sms.Debug.Emulator</PackageId>
+    <Description>Fully managed, headless Sega Master System / Game Gear emulator and debug session behind Sms.Mcp: Z80, VDP, SN76489 PSG and YM2413 FM, with ROM loading, frame stepping, programmed input, memory/VDP inspection, screen capture, breakpoints, watchpoints and write traces. Usable from tests without the MCP server.</Description>
+    <PackageTags>sega;master-system;game-gear;sms;z80;emulator;debugger;headless;testing</PackageTags>
+    <Authors>SuperJMN</Authors>
+    <Company>José Manuel Nieto (@SuperJMN)</Company>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/SuperJMN/sms-debug-mcp</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/SuperJMN/sms-debug-mcp</PackageProjectUrl>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../Sms.Debug.Core/Sms.Debug.Core.csproj" />
     <Compile Update="Vendor/**/*.cs"><Nullable>disable</Nullable></Compile>
+    <None Include="../../README.md" Pack="true" PackagePath="" />
+    <None Include="../../THIRD-PARTY-NOTICES.md" Pack="true" PackagePath="" />
+    <None Include="Vendor/Essgee/LICENSE.txt" Pack="true" PackagePath="ESSGEE-LICENSE.txt" />
+    <None Include="Vendor/Emu2413/LICENSE.txt" Pack="true" PackagePath="EMU2413-LICENSE.txt" />
   </ItemGroup>
 </Project>

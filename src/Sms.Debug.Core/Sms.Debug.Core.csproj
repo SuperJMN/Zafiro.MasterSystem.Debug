@@ -1,3 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup><TargetFramework>net10.0</TargetFramework><IsPackable>false</IsPackable></PropertyGroup>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <PackageId>Sms.Debug.Core</PackageId>
+    <Description>Data model shared by the Sms.Mcp Sega Master System / Game Gear debugger: registers, VDP/PSG/FM state, bus accesses, observations, plus PNG and WAV encoders.</Description>
+    <PackageTags>sega;master-system;game-gear;sms;debugger;emulator</PackageTags>
+    <Authors>SuperJMN</Authors>
+    <Company>José Manuel Nieto (@SuperJMN)</Company>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/SuperJMN/sms-debug-mcp</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/SuperJMN/sms-debug-mcp</PackageProjectUrl>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
 </Project>

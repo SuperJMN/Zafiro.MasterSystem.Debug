@@ -38,6 +38,27 @@ Diagnostics use stderr exclusively. Every request is serialized, and execution
 always returns to a paused machine, reporting actual frames, instructions, cycles
 and stop reason.
 
+## Use the emulator from .NET code
+
+The emulation core and debug session are also published as libraries, so tests can
+drive ROMs headlessly in process without the MCP server:
+
+```bash
+dotnet add package Sms.Debug.Emulator
+```
+
+```csharp
+var session = new Sms.Debug.Emulator.SmsDebugSession();
+session.LoadRomBytes(rom, system: "sms");
+session.SetController("right");
+session.RunFrame(60);
+var ram = session.ReadMemory(0xC000, 16);
+var pixels = session.ScreenPixels();
+```
+
+`Sms.Debug.Core` holds the shared data model (registers, VDP/PSG state, bus
+accesses) and the PNG/WAV encoders.
+
 ## Build from source
 
 Requires the .NET 10 SDK.
