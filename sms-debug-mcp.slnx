@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Sms.Debug.Core/Sms.Debug.Core.csproj" />
+    <Project Path="src/Sms.Debug.Emulator/Sms.Debug.Emulator.csproj" />
+    <Project Path="src/Sms.Debug.Mcp/Sms.Debug.Mcp.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Sms.Debug.Tests/Sms.Debug.Tests.csproj" />
+  </Folder>
+</Solution>

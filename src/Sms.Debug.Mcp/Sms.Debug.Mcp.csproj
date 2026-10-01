@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>Sms.Mcp</AssemblyName>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>smsmcp</ToolCommandName>
+    <PackageId>Sms.Mcp</PackageId>
+    <Version>0.3.0</Version>
+    <Authors>SuperJMN</Authors>
+    <Description>Fully managed Sega Master System / Game Gear MCP debugger: Z80, conditional breakpoints, watchpoints, graphics, observation and PSG/YM2413 WAV audio.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>mcp;sega;master-system;sms;debugger;emulator</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Sms.Debug.Emulator/Sms.Debug.Emulator.csproj" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.9" />
+    <PackageReference Include="ModelContextProtocol" Version="1.4.0" />
+    <None Include="../../README.md" Pack="true" PackagePath="" />
+    <None Include="../../THIRD-PARTY-NOTICES.md" Pack="true" PackagePath="" />
+    <None Include="../Sms.Debug.Emulator/Vendor/Essgee/LICENSE.txt" Pack="true" PackagePath="ESSGEE-LICENSE.txt" />
+    <None Include="../Sms.Debug.Emulator/Vendor/Emu2413/LICENSE.txt" Pack="true" PackagePath="EMU2413-LICENSE.txt" />
+  </ItemGroup>
+</Project>
