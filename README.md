@@ -12,7 +12,33 @@ The emulation core is vendored C#: the Z80, VDP and SN76489 PSG come from
 C# port of [emu2413](https://github.com/digital-sound-antiques/emu2413) v1.5.9 that
 matches the C original sample for sample. Both are MIT licensed.
 
-## Build and run
+## Install
+
+The server is published on NuGet as the `Sms.Mcp` .NET tool and requires the .NET 10
+runtime. MCP clients can run it without a separate install through `dnx`:
+
+```json
+{
+  "mcpServers": {
+    "sms_debug": {
+      "command": "dnx",
+      "args": ["Sms.Mcp", "--yes"]
+    }
+  }
+}
+```
+
+Or install it globally and use the `smsmcp` command:
+
+```bash
+dotnet tool install -g Sms.Mcp
+```
+
+Diagnostics use stderr exclusively. Every request is serialized, and execution
+always returns to a paused machine, reporting actual frames, instructions, cycles
+and stop reason.
+
+## Build from source
 
 Requires the .NET 10 SDK.
 
@@ -21,20 +47,14 @@ dotnet build sms-debug-mcp.slnx -c Release -m:4
 dotnet src/Sms.Debug.Mcp/bin/Release/net10.0/Sms.Mcp.dll
 ```
 
-Diagnostics use stderr exclusively. Every request is serialized, and execution
-always returns to a paused machine, reporting actual frames, instructions, cycles
-and stop reason.
-
-## MCP configuration
-
-After building, use an absolute path:
+To validate unreleased changes, point the MCP client at the built assembly:
 
 ```json
 {
   "mcpServers": {
     "sms_debug": {
       "command": "dotnet",
-      "args": ["/home/jmn/Repos/SmsMcp/src/Sms.Debug.Mcp/bin/Release/net10.0/Sms.Mcp.dll"]
+      "args": ["/absolute/path/to/sms-debug-mcp/src/Sms.Debug.Mcp/bin/Release/net10.0/Sms.Mcp.dll"]
     }
   }
 }
@@ -71,15 +91,15 @@ in-game play in a scripted input sequence, including GG Sonic 1 v1.1. Wonder Boy
 Monster Land detects the YM2413 and plays its FM soundtrack. See [evidence](docs/validation.md). ROMs and their graphics/audio
 artifacts remain local and are not redistributed.
 
-## Packaging
+## Releases
+
+Every commit on `master` is released by a DotnetDeployer.Fleet worker using
+[`deployer.yaml`](deployer.yaml): it builds and tests the solution, versions it with
+GitVersion and pushes the `Sms.Mcp` package to NuGet. To check packaging locally:
 
 ```bash
-dotnet pack src/Sms.Debug.Mcp/Sms.Debug.Mcp.csproj -c Release -o artifacts/packages
-dotnet tool install Sms.Mcp --tool-path artifacts/tool --add-source artifacts/packages --version 0.3.0
-artifacts/tool/smsmcp
+dnx dotnetdeployer.tool --dry-run
 ```
-
-No package has been published remotely.
 
 ## Scope
 

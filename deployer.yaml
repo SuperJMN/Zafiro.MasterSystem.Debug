@@ -1,0 +1,11 @@
+# DotnetDeployer configuration
+# Publishes the Sms.Mcp .NET tool to NuGet.
+# Run locally with `dnx dotnetdeployer.tool` (dry run: add `--dry-run`),
+# or let a DotnetDeployer.Fleet worker run it automatically on every commit.
+
+nuget:
+  enabled: true
+  source: https://api.nuget.org/v3/index.json
+  apiKey:
+    from: env
+    name: NUGET_API_KEY

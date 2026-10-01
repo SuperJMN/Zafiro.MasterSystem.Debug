@@ -5,3 +5,4 @@ artifacts/
 TestResults/
 __pycache__/
 *.pyc
+nupkg/

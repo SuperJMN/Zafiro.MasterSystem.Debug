@@ -6,12 +6,17 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>smsmcp</ToolCommandName>
     <PackageId>Sms.Mcp</PackageId>
-    <Version>0.3.0</Version>
+    <Title>Sms.Mcp</Title>
+    <Description>Fully managed, cross-platform MCP server for debugging Sega Master System and Game Gear ROMs: Z80 stepping, conditional breakpoints, watchpoints, VDP graphics, correlated observation and PSG/YM2413 WAV audio over the Model Context Protocol.</Description>
     <Authors>SuperJMN</Authors>
-    <Description>Fully managed Sega Master System / Game Gear MCP debugger: Z80, conditional breakpoints, watchpoints, graphics, observation and PSG/YM2413 WAV audio.</Description>
+    <Company>José Manuel Nieto (@SuperJMN)</Company>
+    <Product>Sms.Mcp</Product>
+    <PackageTags>mcp;model-context-protocol;sega;master-system;game-gear;sms;debugger;emulator;ai</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageTags>mcp;sega;master-system;sms;debugger;emulator</PackageTags>
+    <RepositoryUrl>https://github.com/SuperJMN/sms-debug-mcp</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/SuperJMN/sms-debug-mcp</PackageProjectUrl>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../Sms.Debug.Emulator/Sms.Debug.Emulator.csproj" />
