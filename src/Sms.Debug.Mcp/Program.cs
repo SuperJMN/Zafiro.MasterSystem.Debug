@@ -5,7 +5,11 @@ using Sms.Debug.Emulator;
 
 // Keep stdout exclusively for MCP JSON-RPC, including diagnostics from dependencies.
 Console.SetOut(Console.Error);
-var builder = Host.CreateApplicationBuilder();
+var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings
+{
+    Args = args,
+    ContentRootPath = AppContext.BaseDirectory,
+});
 builder.Logging.AddConsole(options => options.LogToStandardErrorThreshold = LogLevel.Trace);
 builder.Services.AddSingleton<SmsDebugSession>();
 builder.Services.AddMcpServer().WithStdioServerTransport().WithToolsFromAssembly();
