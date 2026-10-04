@@ -1,7 +1,7 @@
 using System.Reflection;
 using System.Text.Json;
 
-namespace Sms.Debug.Emulator;
+namespace Zafiro.MasterSystem.Debug.Emulator;
 
 // Version-bound snapshots capture chip phase, private latches, sprite evaluation buffers and
 // partially generated audio/video as well as registers. Delegates remain wired to the new machine.

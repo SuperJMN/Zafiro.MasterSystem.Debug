@@ -1,4 +1,4 @@
-# Sms.Mcp
+# Zafiro.MasterSystem.Debug
 
 A .NET 10 Sega Master System / Game Gear debugging MCP, in the style of the sibling
 Game Boy and NES servers. It runs headlessly over stdio and is **fully managed**:
@@ -14,24 +14,24 @@ matches the C original sample for sample. Both are MIT licensed.
 
 ## Install
 
-The server is published on NuGet as the `Sms.Mcp` .NET tool and requires the .NET 10
-runtime. MCP clients can run it without a separate install through `dnx`:
+The server is published on NuGet as the `Zafiro.MasterSystem.Debug.Mcp` .NET tool
+and requires the .NET 10 runtime. MCP clients can run it without a separate install through `dnx`:
 
 ```json
 {
   "mcpServers": {
     "sms_debug": {
       "command": "dnx",
-      "args": ["Sms.Mcp", "--yes"]
+      "args": ["Zafiro.MasterSystem.Debug.Mcp", "--yes"]
     }
   }
 }
 ```
 
-Or install it globally and use the `smsmcp` command:
+Or install it globally and use the `zafiro-mastersystem-debug-mcp` command:
 
 ```bash
-dotnet tool install -g Sms.Mcp
+dotnet tool install -g Zafiro.MasterSystem.Debug.Mcp
 ```
 
 Diagnostics use stderr exclusively. Every request is serialized, and execution
@@ -44,11 +44,11 @@ The emulation core and debug session are also published as libraries, so tests c
 drive ROMs headlessly in process without the MCP server:
 
 ```bash
-dotnet add package Sms.Debug.Emulator
+dotnet add package Zafiro.MasterSystem.Debug.Emulator
 ```
 
 ```csharp
-var session = new Sms.Debug.Emulator.SmsDebugSession();
+var session = new Zafiro.MasterSystem.Debug.Emulator.SmsDebugSession();
 session.LoadRomBytes(rom, system: "sms");
 session.SetController("right");
 session.RunFrame(60);
@@ -66,7 +66,7 @@ and nothing is allocated per instruction. For test harnesses:
 - `TraceWritesUntilScanline(line, "vram", address, length)` records every write to a range
   on the way to a line in one run, instead of stopping on each one as a watchpoint does.
 
-`Sms.Debug.Core` holds the shared data model (registers, VDP/PSG state, bus
+`Zafiro.MasterSystem.Debug.Core` holds the shared data model (registers, VDP/PSG state, bus
 accesses) and the PNG/WAV encoders.
 
 ## Build from source
@@ -74,8 +74,8 @@ accesses) and the PNG/WAV encoders.
 Requires the .NET 10 SDK.
 
 ```bash
-dotnet build sms-debug-mcp.slnx -c Release -m:4
-dotnet src/Sms.Debug.Mcp/bin/Release/net10.0/Sms.Mcp.dll
+dotnet build Zafiro.MasterSystem.Debug.slnx -c Release -m:4
+dotnet src/Zafiro.MasterSystem.Debug.Mcp/bin/Release/net10.0/Zafiro.MasterSystem.Debug.Mcp.dll
 ```
 
 To validate unreleased changes, point the MCP client at the built assembly:
@@ -85,7 +85,7 @@ To validate unreleased changes, point the MCP client at the built assembly:
   "mcpServers": {
     "sms_debug": {
       "command": "dotnet",
-      "args": ["/absolute/path/to/sms-debug-mcp/src/Sms.Debug.Mcp/bin/Release/net10.0/Sms.Mcp.dll"]
+      "args": ["/absolute/path/to/Zafiro.MasterSystem.Debug/src/Zafiro.MasterSystem.Debug.Mcp/bin/Release/net10.0/Zafiro.MasterSystem.Debug.Mcp.dll"]
     }
   }
 }
@@ -111,7 +111,7 @@ SMS sessions attach a YM2413 by default, like a Japanese Master System; load wit
 ## Validation
 
 ```bash
-dotnet test sms-debug-mcp.slnx -c Release -m:4
+dotnet test Zafiro.MasterSystem.Debug.slnx -c Release -m:4
 python3 scripts/qualify_roms.py --gameplay "/path/to/roms/"*.zip
 ```
 
@@ -126,7 +126,7 @@ artifacts remain local and are not redistributed.
 
 Every commit on `master` is released by a DotnetDeployer.Fleet worker using
 [`deployer.yaml`](deployer.yaml): it builds and tests the solution, versions it with
-GitVersion and pushes the `Sms.Mcp` package to NuGet. To check packaging locally:
+GitVersion and pushes the `Zafiro.MasterSystem.Debug.Mcp` package to NuGet. To check packaging locally:
 
 ```bash
 dnx dotnetdeployer.tool --dry-run

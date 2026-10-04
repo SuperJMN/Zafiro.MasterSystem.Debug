@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/Zafiro.MasterSystem.Debug.Benchmarks/Zafiro.MasterSystem.Debug.Benchmarks.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Zafiro.MasterSystem.Debug.Core/Zafiro.MasterSystem.Debug.Core.csproj" />
+    <Project Path="src/Zafiro.MasterSystem.Debug.Emulator/Zafiro.MasterSystem.Debug.Emulator.csproj" />
+    <Project Path="src/Zafiro.MasterSystem.Debug.Mcp/Zafiro.MasterSystem.Debug.Mcp.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Zafiro.MasterSystem.Debug.Tests/Zafiro.MasterSystem.Debug.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,4 +1,4 @@
-namespace Sms.Debug.Mcp;
+namespace Zafiro.MasterSystem.Debug.Mcp;
 
 internal static class Artifacts
 {

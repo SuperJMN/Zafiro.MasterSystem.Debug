@@ -1,4 +1,4 @@
-namespace Sms.Debug.Tests;
+namespace Zafiro.MasterSystem.Debug.Tests;
 
 internal static class TestRom
 {

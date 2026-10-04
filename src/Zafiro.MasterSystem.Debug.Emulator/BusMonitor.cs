@@ -1,6 +1,6 @@
-using Sms.Debug.Core;
+using Zafiro.MasterSystem.Debug.Core;
 
-namespace Sms.Debug.Emulator;
+namespace Zafiro.MasterSystem.Debug.Emulator;
 
 internal enum BusSpace : byte { Cpu, Ram, Io, Vram, Cram, Vdp }
 

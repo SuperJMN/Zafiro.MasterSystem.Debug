@@ -1,8 +1,8 @@
 using System.Diagnostics;
 using System.Text.Json;
-using Sms.Debug.Mcp;
+using Zafiro.MasterSystem.Debug.Mcp;
 
-namespace Sms.Debug.Tests;
+namespace Zafiro.MasterSystem.Debug.Tests;
 
 public sealed class StdioTests
 {
@@ -10,14 +10,14 @@ public sealed class StdioTests
     public async Task Real_stdio_server_discovers_tools_executes_rom_and_returns_images_audio_and_errors()
     {
         var root = new DirectoryInfo(AppContext.BaseDirectory);
-        while (root != null && !File.Exists(Path.Combine(root.FullName, "sms-debug-mcp.slnx"))) root = root.Parent;
+        while (root != null && !File.Exists(Path.Combine(root.FullName, "Zafiro.MasterSystem.Debug.slnx"))) root = root.Parent;
         Assert.NotNull(root);
 #if DEBUG
         const string configuration = "Debug";
 #else
         const string configuration = "Release";
 #endif
-        var server = Path.Combine(root.FullName, "src/Sms.Debug.Mcp/bin", configuration, "net10.0/Sms.Mcp.dll");
+        var server = Path.Combine(root.FullName, "src/Zafiro.MasterSystem.Debug.Mcp/bin", configuration, "net10.0/Zafiro.MasterSystem.Debug.Mcp.dll");
         var temp = Path.Combine(Path.GetTempPath(), "sms-mcp-test-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(temp);
         var rom = Path.Combine(temp, "fixture.sms");

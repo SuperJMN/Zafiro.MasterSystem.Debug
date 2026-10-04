@@ -2,7 +2,7 @@ using System.Buffers.Binary;
 using System.IO.Compression;
 using System.Text;
 
-namespace Sms.Debug.Core;
+namespace Zafiro.MasterSystem.Debug.Core;
 
 public static class PngEncoder
 {

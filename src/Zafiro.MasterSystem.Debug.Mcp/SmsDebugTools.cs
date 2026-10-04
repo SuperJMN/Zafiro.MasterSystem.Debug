@@ -2,10 +2,10 @@ using System.ComponentModel;
 using System.Text.Json;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
-using Sms.Debug.Core;
-using Sms.Debug.Emulator;
+using Zafiro.MasterSystem.Debug.Core;
+using Zafiro.MasterSystem.Debug.Emulator;
 
-namespace Sms.Debug.Mcp;
+namespace Zafiro.MasterSystem.Debug.Mcp;
 
 [McpServerToolType]
 public static class SmsDebugTools

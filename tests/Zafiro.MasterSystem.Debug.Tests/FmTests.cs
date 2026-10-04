@@ -1,8 +1,8 @@
 using System.Security.Cryptography;
 using Emu2413;
-using Sms.Debug.Emulator;
+using Zafiro.MasterSystem.Debug.Emulator;
 
-namespace Sms.Debug.Tests;
+namespace Zafiro.MasterSystem.Debug.Tests;
 
 public sealed class FmTests
 {

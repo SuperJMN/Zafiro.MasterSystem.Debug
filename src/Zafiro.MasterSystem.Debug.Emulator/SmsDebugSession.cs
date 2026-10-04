@@ -4,9 +4,9 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Essgee.Emulation.CPU;
-using Sms.Debug.Core;
+using Zafiro.MasterSystem.Debug.Core;
 
-namespace Sms.Debug.Emulator;
+namespace Zafiro.MasterSystem.Debug.Emulator;
 
 public sealed class SmsDebugSession
 {

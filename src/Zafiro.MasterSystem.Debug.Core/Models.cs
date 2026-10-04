@@ -1,4 +1,4 @@
-namespace Sms.Debug.Core;
+namespace Zafiro.MasterSystem.Debug.Core;
 
 public sealed record CpuRegisters(ushort AF, ushort BC, ushort DE, ushort HL, ushort IX, ushort IY,
     ushort SP, ushort PC, ushort AlternateAF, ushort AlternateBC, ushort AlternateDE, ushort AlternateHL,

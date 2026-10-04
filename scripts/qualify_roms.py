@@ -142,7 +142,7 @@ def main():
     args = parser.parse_args()
     assert 1 <= args.frames <= 600
     root = Path(__file__).resolve().parent.parent
-    server = args.server or root / 'src/Sms.Debug.Mcp/bin/Release/net10.0/Sms.Mcp.dll'
+    server = args.server or root / 'src/Zafiro.MasterSystem.Debug.Mcp/bin/Release/net10.0/Zafiro.MasterSystem.Debug.Mcp.dll'
     client = Client(['dotnet', str(server.resolve())], root)
     try:
         tools = client.request('tools/list', {})['tools']
