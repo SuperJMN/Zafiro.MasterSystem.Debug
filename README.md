@@ -56,6 +56,16 @@ var ram = session.ReadMemory(0xC000, 16);
 var pixels = session.ScreenPixels();
 ```
 
+A run pays only for what it observes: with no breakpoints the program counter is not
+read, CPU reads are not observed without a read watchpoint, conditions are compiled once,
+and nothing is allocated per instruction. For test harnesses:
+
+- `RunTimeLimit` (15 seconds by default) bounds the wall-clock time of one run; set it to
+  `null` so a loaded CI machine cannot split a run nondeterministically.
+- `RunUntilScanline(line)` is `RunUntilCondition("SCANLINE == line")` without parsing.
+- `TraceWritesUntilScanline(line, "vram", address, length)` records every write to a range
+  on the way to a line in one run, instead of stopping on each one as a watchpoint does.
+
 `Sms.Debug.Core` holds the shared data model (registers, VDP/PSG state, bus
 accesses) and the PNG/WAV encoders.
 
@@ -105,7 +115,7 @@ dotnet test sms-debug-mcp.slnx -c Release -m:4
 python3 scripts/qualify_roms.py --gameplay "/path/to/roms/"*.zip
 ```
 
-**37 tests** pass, including a real stdio session, FM detection and mixer behavior,
+**52 tests** pass, including a real stdio session, FM detection and mixer behavior,
 FM snapshots, and a bit-exact comparison of the YM2413 port against the C original.
 Seventeen local ROMs passed the stdio debugger workflow, and twelve of them reached
 in-game play in a scripted input sequence, including GG Sonic 1 v1.1. Wonder Boy in

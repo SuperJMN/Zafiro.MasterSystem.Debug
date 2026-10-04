@@ -19,9 +19,16 @@ public sealed class SmsDebugSession
     private readonly Dictionary<int, Breakpoint> breakpoints = [];
     private readonly Dictionary<int, Condition> conditions = [];
     private readonly Dictionary<int, Watchpoint> watchpoints = [];
-    private readonly Dictionary<(string, int), BusAccess> lastWriters = [];
+    private readonly BusMonitor monitor = new();
+    private (SmsMachine Machine, CompiledBreakpoint[] Breakpoints)? compiledBreakpoints;
     private readonly Dictionary<string, SymbolInfo> symbols = new(StringComparer.Ordinal);
     private SmsMachine Machine => machine ?? throw new InvalidOperationException("Load a ROM first.");
+
+    /// <summary>
+    /// Wall-clock budget of a single run, which then stops with <c>time_limit</c>; 15 seconds by default.
+    /// Null removes it, so in-process callers get deterministic stops under any CPU contention.
+    /// </summary>
+    public TimeSpan? RunTimeLimit { get; set; } = TimeSpan.FromSeconds(15);
 
     public SessionState GetState() => new(machine != null, romPath, romHash, machine?.Mapper ?? "sega",
         machine?.GameGear == true ? "gg" : "sms", machine == null ? [] : [machine.BankAt(0x400), machine.BankAt(0x4000), machine.BankAt(0x8000)],
@@ -68,7 +75,8 @@ public sealed class SmsDebugSession
         machine = fresh;
         romPath = path;
         romHash = Convert.ToHexStringLower(SHA256.HashData(bytes));
-        breakpoints.Clear(); conditions.Clear(); watchpoints.Clear(); lastWriters.Clear(); symbols.Clear();
+        breakpoints.Clear(); conditions.Clear(); watchpoints.Clear(); monitor.ClearLastWriters(); symbols.Clear();
+        compiledBreakpoints = null; monitor.SetWatchpoints([]);
         nextId = 1; lastBreakpoint = null;
         return GetState();
     }
@@ -79,7 +87,7 @@ public sealed class SmsDebugSession
         var fresh = new SmsMachine(m.Rom, m.Mapper, m.Standard, m.GameGear, m.FmPresent);
         fresh.Cartridge.LoadRam((byte[])m.Cartridge.GetRamData().Clone());
         machine = fresh;
-        lastWriters.Clear(); lastBreakpoint = null;
+        monitor.ClearLastWriters(); lastBreakpoint = null;
         return GetState();
     }
 
@@ -153,10 +161,11 @@ public sealed class SmsDebugSession
         var bp = new Breakpoint(nextId++, (ushort)address, condition, bank);
         breakpoints.Add(bp.Id, bp);
         if (parsed != null) conditions.Add(bp.Id, parsed);
+        compiledBreakpoints = null;
         return bp;
     }
 
-    public bool ClearBreakpoint(int id) { conditions.Remove(id); return breakpoints.Remove(id); }
+    public bool ClearBreakpoint(int id) { conditions.Remove(id); compiledBreakpoints = null; return breakpoints.Remove(id); }
     public Breakpoint[] ListBreakpoints() => breakpoints.Values.ToArray();
     public Watchpoint SetWatchpoint(int address, int length = 1, string space = "cpu", string access = "write")
     {
@@ -166,9 +175,15 @@ public sealed class SmsDebugSession
         if (space is "vram" or "cram" or "vdp" && access != "write") throw new ArgumentException("Direct VDP spaces support write watchpoints; watch I/O ports for hardware reads.");
         var wp = new Watchpoint(nextId++, space, address, address + length - 1, access);
         watchpoints.Add(wp.Id, wp);
+        monitor.SetWatchpoints(watchpoints.Values);
         return wp;
     }
-    public bool ClearWatchpoint(int id) => watchpoints.Remove(id);
+    public bool ClearWatchpoint(int id)
+    {
+        if (!watchpoints.Remove(id)) return false;
+        monitor.SetWatchpoints(watchpoints.Values);
+        return true;
+    }
     public Watchpoint[] ListWatchpoints() => watchpoints.Values.ToArray();
 
     public static void Bound(int value, int min, int max, string name)
@@ -176,37 +191,41 @@ public sealed class SmsDebugSession
         if (value < min || value > max) throw new ArgumentOutOfRangeException(name, $"{name} must be {min}..{max}.");
     }
 
-    private bool Evaluate(Condition condition) => condition.Evaluate(ReadRegisters(), ReadVdpState(), Machine.Frames, Machine.PeekCpu);
+    private sealed record CompiledBreakpoint(int Id, ushort Address, int? Bank, Func<bool>? Condition);
 
-    private RunResult Run(int maxInstructions, long maxCycles, long? targetFrame = null, Condition? condition = null,
-        Func<bool>? predicate = null, bool ignoreBreakpoints = false, Action<BusAccess>? trace = null,
-        CancellationToken cancellationToken = default)
+    // Conditions read the machine directly: no register or VDP snapshot, reflection or parsing per check.
+    private static Func<bool> Compile(Condition condition, SmsMachine m) => condition.Compile(name => name switch
+    {
+        "SCANLINE" => () => m.Vdp.CurrentScanline, "VCOUNTER" => () => m.Vdp.DebugVCounter,
+        "HCOUNTER" => () => m.Vdp.DebugHCounter, "FRAME" => () => m.Frames,
+        _ => m.Cpu.DebugRegisterReader(name)
+    }, m.PeekCpu);
+
+    private CompiledBreakpoint[] CompiledBreakpoints(SmsMachine m)
+    {
+        if (compiledBreakpoints is { } cached && cached.Machine == m) return cached.Breakpoints;
+        var compiled = breakpoints.Values.Select(bp => new CompiledBreakpoint(bp.Id, bp.Address, bp.Bank,
+            conditions.TryGetValue(bp.Id, out var c) ? Compile(c, m) : null)).ToArray();
+        compiledBreakpoints = (m, compiled);
+        return compiled;
+    }
+
+    private RunResult Run(int maxInstructions, long maxCycles, long? targetFrame = null, Func<bool>? condition = null,
+        bool ignoreBreakpoints = false, WriteSink? trace = null, CancellationToken cancellationToken = default)
     {
         Bound(maxInstructions, 1, 5_000_000, nameof(maxInstructions));
         if (maxCycles is < 1 or > 500_000_000) throw new ArgumentOutOfRangeException(nameof(maxCycles));
         var m = Machine;
         var startInstructions = m.Instructions; var startCycles = m.Cycles; var startFrames = m.Frames;
-        var deadline = Stopwatch.StartNew();
-        BusAccess? hitAccess = null; int? hitWatch = null; int? hitBreak = null;
+        var started = Stopwatch.GetTimestamp();
+        var limit = RunTimeLimit;
+        int? hitBreak = null;
         var reason = "instruction_limit";
         var skipBreakpoint = lastBreakpoint;
         lastBreakpoint = null;
-        m.AccessObserver = a =>
-        {
-            if (a.Access == "write")
-            {
-                lastWriters[(a.Space, a.Address)] = a;
-                // CPU RAM mirrors identify the same physical write.
-                if (a.Space == "cpu" && a.Address >= 0xC000)
-                    lastWriters[("ram", a.Address & 0x1FFF)] = a;
-            }
-            trace?.Invoke(a);
-            if (hitWatch == null)
-            foreach (var wp in watchpoints.Values)
-                if (wp.Space == a.Space && a.Address >= wp.Start && a.Address <= wp.End
-                    && (wp.Access == a.Access || wp.Access == "readwrite"))
-                { hitWatch = wp.Id; hitAccess = a; break; }
-        };
+        // With no breakpoints the program counter is never read before an instruction.
+        var breaks = ignoreBreakpoints ? [] : CompiledBreakpoints(m);
+        monitor.Attach(m, trace);
         try
         {
             for (var step = 0; step < maxInstructions; step++)
@@ -214,28 +233,30 @@ public sealed class SmsDebugSession
                 if ((step & 1023) == 0)
                 {
                     if (cancellationToken.IsCancellationRequested) { reason = "cancelled"; break; }
-                    if (deadline.Elapsed.TotalSeconds > 15) { reason = "time_limit"; break; }
+                    if (limit.HasValue && Stopwatch.GetElapsedTime(started) > limit.Value) { reason = "time_limit"; break; }
                 }
                 if (targetFrame.HasValue && m.Frames >= targetFrame) { reason = "frame_complete"; break; }
-                if (condition != null && Evaluate(condition) || predicate?.Invoke() == true) { reason = "condition"; break; }
+                if (condition?.Invoke() == true) { reason = "condition"; break; }
                 if (m.Cycles - startCycles >= maxCycles) { reason = "cycle_limit"; break; }
-                var pc = ReadRegisters().PC;
-                if (!ignoreBreakpoints)
-                foreach (var bp in breakpoints.Values)
-                    if (!(step == 0 && bp.Id == skipBreakpoint) && pc == bp.Address
-                        && (!bp.Bank.HasValue || m.BankAt(pc) == bp.Bank)
-                        && (!conditions.TryGetValue(bp.Id, out var c) || Evaluate(c)))
-                    { hitBreak = bp.Id; break; }
-                if (hitBreak.HasValue) { reason = "breakpoint"; lastBreakpoint = hitBreak; break; }
+                if (breaks.Length != 0)
+                {
+                    var pc = m.Cpu.DebugPc;
+                    foreach (var bp in breaks)
+                        if (!(step == 0 && bp.Id == skipBreakpoint) && pc == bp.Address
+                            && (!bp.Bank.HasValue || m.BankAt(pc) == bp.Bank)
+                            && (bp.Condition == null || bp.Condition()))
+                        { hitBreak = bp.Id; break; }
+                    if (hitBreak.HasValue) { reason = "breakpoint"; lastBreakpoint = hitBreak; break; }
+                }
                 m.Step();
-                if (hitWatch.HasValue) { reason = "watchpoint"; break; }
+                if (monitor.HitWatch.HasValue) { reason = "watchpoint"; break; }
             }
             if (reason == "instruction_limit" && targetFrame.HasValue && m.Frames >= targetFrame) reason = "frame_complete";
-            if (reason == "instruction_limit" && (condition != null && Evaluate(condition) || predicate?.Invoke() == true)) reason = "condition";
+            if (reason == "instruction_limit" && condition?.Invoke() == true) reason = "condition";
         }
-        finally { m.AccessObserver = null; }
+        finally { monitor.Detach(); }
         return new(reason, m.Instructions - startInstructions, m.Cycles - startCycles, m.Frames - startFrames,
-            hitBreak, hitWatch, hitAccess, GetState());
+            hitBreak, monitor.HitWatch, monitor.HitAccess, GetState());
     }
 
     public RunResult StepInstruction(int count = 1, CancellationToken cancellationToken = default)
@@ -243,7 +264,19 @@ public sealed class SmsDebugSession
     public RunResult Continue(int maxInstructions = 1_000_000, long maxCycles = 20_000_000, CancellationToken cancellationToken = default)
         => Run(maxInstructions, maxCycles, cancellationToken: cancellationToken);
     public RunResult RunUntilCondition(string expression, int maxInstructions = 1_000_000, CancellationToken cancellationToken = default)
-        => Run(maxInstructions, 20_000_000, condition: Condition.Parse(expression), cancellationToken: cancellationToken);
+        => Run(maxInstructions, 20_000_000, condition: Compile(Condition.Parse(expression), Machine), cancellationToken: cancellationToken);
+
+    /// <summary>
+    /// Same as <c>RunUntilCondition("SCANLINE == line")</c>, without parsing an expression: runs until the
+    /// VDP is on <paramref name="scanline"/>, stopping on breakpoints and watchpoints as any run.
+    /// </summary>
+    public RunResult RunUntilScanline(int scanline, int maxInstructions = 1_000_000, CancellationToken cancellationToken = default)
+    {
+        Bound(scanline, 0, 312, nameof(scanline));
+        var vdp = Machine.Vdp;
+        return Run(maxInstructions, 20_000_000, condition: () => vdp.CurrentScanline == scanline, cancellationToken: cancellationToken);
+    }
+
     public RunResult RunFrame(int frames = 1, CancellationToken cancellationToken = default)
     { Bound(frames, 1, 600, nameof(frames)); return Run(5_000_000, 500_000_000, Machine.Frames + frames, cancellationToken: cancellationToken); }
 
@@ -257,7 +290,8 @@ public sealed class SmsDebugSession
         var target = (ushort)(cpu.PC + Z80A.DisassembleGetOpcodeLen(Machine.Cpu, bytes));
         var first = StepInstruction(cancellationToken: cancellationToken);
         if (first.WatchpointId != null || cancellationToken.IsCancellationRequested) return first;
-        var result = Run(maxInstructions, 20_000_000, predicate: () => ReadRegisters().PC == target && ReadRegisters().SP == cpu.SP,
+        var live = Machine.Cpu;
+        var result = Run(maxInstructions, 20_000_000, condition: () => live.DebugPc == target && live.DebugSp == cpu.SP,
             cancellationToken: cancellationToken);
         return result with { InstructionsExecuted = result.InstructionsExecuted + first.InstructionsExecuted,
             CyclesExecuted = result.CyclesExecuted + first.CyclesExecuted, FramesExecuted = result.FramesExecuted + first.FramesExecuted };
@@ -267,7 +301,8 @@ public sealed class SmsDebugSession
     {
         var sp = ReadRegisters().SP;
         var target = Machine.PeekCpu(sp) | Machine.PeekCpu((ushort)(sp + 1)) << 8;
-        return Run(maxInstructions, 20_000_000, predicate: () => ReadRegisters().PC == target && ReadRegisters().SP == (ushort)(sp + 2),
+        var live = Machine.Cpu;
+        return Run(maxInstructions, 20_000_000, condition: () => live.DebugPc == target && live.DebugSp == (ushort)(sp + 2),
             cancellationToken: cancellationToken);
     }
 
@@ -416,20 +451,44 @@ public sealed class SmsDebugSession
     public WriteTrace TraceWrites(string space = "io", int frames = 1, int maxEntries = 4096, CancellationToken cancellationToken = default,
         bool psgOnly = false, bool fmOnly = false)
     {
-        if (fmOnly && !Machine.FmPresent) throw new InvalidOperationException("No YM2413: Game Gear or ROM loaded with fm=false.");
+        var m = Machine;
+        if (fmOnly && !m.FmPresent) throw new InvalidOperationException("No YM2413: Game Gear or ROM loaded with fm=false.");
         _ = SpaceSize(space); Bound(frames, 1, 600, nameof(frames)); Bound(maxEntries, 1, 16384, nameof(maxEntries));
+        var traced = BusMonitor.Parse(space);
         var entries = new List<BusAccess>(); bool truncated = false;
-        var result = Run(5_000_000, 500_000_000, Machine.Frames + frames, trace: a =>
+        var result = Run(5_000_000, 500_000_000, m.Frames + frames, trace: (s, address, value) =>
         {
-            if (a.Access != "write" || a.Space != space || (psgOnly && (a.Address & 0xC0) != 0x40 && !(Machine.GameGear && a.Address == 6))
-                || (fmOnly && a.Address is not (0xF0 or 0xF1 or 0xF2))) return;
-            if (entries.Count < maxEntries) entries.Add(a); else truncated = true;
+            if (s != traced || (psgOnly && (address & 0xC0) != 0x40 && !(m.GameGear && address == 6))
+                || (fmOnly && address is not (0xF0 or 0xF1 or 0xF2))) return;
+            if (entries.Count < maxEntries) entries.Add(m.Describe(s, address, value, true)); else truncated = true;
+        }, cancellationToken: cancellationToken);
+        return new(entries.ToArray(), truncated, result);
+    }
+
+    /// <summary>
+    /// Runs like <see cref="RunUntilScanline"/> and records the writes to <paramref name="length"/> bytes of
+    /// <paramref name="space"/> from <paramref name="address"/> (the whole space by default) on the way,
+    /// instead of stopping on each one as a watchpoint would.
+    /// </summary>
+    public WriteTrace TraceWritesUntilScanline(int scanline, string space = "vram", int address = 0, int? length = null,
+        int maxEntries = 4096, int maxInstructions = 1_000_000, CancellationToken cancellationToken = default)
+    {
+        var m = Machine;
+        var end = address + (length ?? SpaceSize(space) - address) - 1;
+        ValidateRange(space, address, end - address + 1);
+        Bound(scanline, 0, 312, nameof(scanline)); Bound(maxEntries, 1, 16384, nameof(maxEntries));
+        var traced = BusMonitor.Parse(space);
+        var entries = new List<BusAccess>(); bool truncated = false;
+        var result = Run(maxInstructions, 20_000_000, condition: () => m.Vdp.CurrentScanline == scanline, trace: (s, written, value) =>
+        {
+            if (s != traced || written < address || written > end) return;
+            if (entries.Count < maxEntries) entries.Add(m.Describe(s, written, value, true)); else truncated = true;
         }, cancellationToken: cancellationToken);
         return new(entries.ToArray(), truncated, result);
     }
 
     public BusAccess? FindLastWriter(int address, string space = "cpu")
-    { ValidateRange(space, address, 1); return lastWriters.GetValueOrDefault((space, address)); }
+    { ValidateRange(space, address, 1); return monitor.LastWriter(space, address); }
 
     public AudioCapture CaptureAudio(int frames = 60, CancellationToken cancellationToken = default)
     {
@@ -482,7 +541,7 @@ public sealed class SmsDebugSession
         var fresh = new SmsMachine(m.Rom, m.Mapper, m.Standard, m.GameGear, m.FmPresent);
         MachineSnapshot.Restore(fresh, state.Data);
         machine = fresh;
-        lastWriters.Clear(); lastBreakpoint = null;
+        monitor.ClearLastWriters(); lastBreakpoint = null;
         return GetState();
     }
 

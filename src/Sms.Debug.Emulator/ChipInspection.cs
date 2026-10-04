@@ -7,6 +7,20 @@ namespace Essgee.Emulation.CPU
     {
         public CpuRegisters InspectRegisters() => new(af.Word, bc.Word, de.Word, hl.Word, ix.Word, iy.Word,
             sp, pc, af_.Word, bc_.Word, de_.Word, hl_.Word, i, r, iff1, iff2, im, halt);
+
+        // Live reads for the run loop, without building a register snapshot per instruction.
+        public ushort DebugPc => pc;
+        public ushort DebugSp => sp;
+
+        public Func<long> DebugRegisterReader(string name) => name switch
+        {
+            "A" => () => af.High, "F" => () => af.Low, "B" => () => bc.High, "C" => () => bc.Low,
+            "D" => () => de.High, "E" => () => de.Low, "H" => () => hl.High, "L" => () => hl.Low,
+            "AF" => () => af.Word, "BC" => () => bc.Word, "DE" => () => de.Word, "HL" => () => hl.Word,
+            "IX" => () => ix.Word, "IY" => () => iy.Word, "SP" => () => sp, "PC" => () => pc,
+            "I" => () => i, "R" => () => r,
+            _ => throw new ArgumentException($"Unknown register: {name}.")
+        };
     }
 }
 
@@ -17,6 +31,11 @@ namespace Essgee.Emulation.Video
         public byte[] DebugVram => vram;
         public byte[] DebugCram => cram;
         public byte[] DebugRegisters => registers;
+        public ushort DebugAddress => addressRegister;
+        public byte DebugCode => codeRegister;
+        public bool DebugControlLatchPending => isSecondControlWrite;
+        public int DebugVCounter => vCounter;
+        public int DebugHCounter => hCounter;
         public VdpState InspectState() => new((byte[])registers.Clone(), (byte)statusFlags, currentScanline,
             vCounter, hCounter, this is SegaGGVDP ? 160 : 256, this is SegaGGVDP ? 144 : screenHeight,
             nametableHeight, nametableBaseAddress, spriteAttribTableBaseAddress, spritePatternGenBaseAddress,
@@ -59,6 +78,8 @@ namespace Essgee.Emulation.Audio
     public partial class SN76489
     {
         public Action<short[]>? SampleObserver;
+        // The newest mixed sample, without an array per sample; the FM mixer only needs mono output.
+        public Action<short>? MonoSampleObserver;
         public PsgState InspectState() => new(toneRegisters.Take(3).ToArray(), (ushort[])volumeRegisters.Clone(),
             toneRegisters[3], noiseLfsr, toneRegisters.Take(3)
                 .Select(t => t < 2 ? 0 : clockRate / (32 * t)).ToArray(), sampleRate);

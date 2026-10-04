@@ -30,23 +30,39 @@ public sealed partial class Condition
         return new(operand, match.Groups[2].Value, Number(match.Groups[3].Value));
     }
 
-    public bool Evaluate(CpuRegisters cpu, VdpState vdp, long frame, Func<ushort, byte> memory)
+    public bool Evaluate(CpuRegisters cpu, VdpState vdp, long frame, Func<ushort, byte> memory) => Compile(name => name switch
     {
-        long Register(string name) => name switch
-        {
-            "SCANLINE" => vdp.Scanline, "VCOUNTER" => vdp.VCounter, "HCOUNTER" => vdp.HCounter, "FRAME" => frame,
-            _ => Convert.ToInt64(typeof(CpuRegisters).GetProperty(name)?.GetValue(cpu)
-                ?? throw new ArgumentException($"Unknown register: {name}."), CultureInfo.InvariantCulture)
-        };
-        var actual = operand.StartsWith('[')
-            ? memory(checked((ushort)(TryNumber(operand[1..^1], out var address) ? address : Register(operand[1..^1]))))
-            : Register(operand);
+        "SCANLINE" => () => vdp.Scanline, "VCOUNTER" => () => vdp.VCounter, "HCOUNTER" => () => vdp.HCounter, "FRAME" => () => frame,
+        _ => () => Register(cpu, name)
+    }, memory)();
+
+    /// <summary>
+    /// Binds the condition to live state once. The result reads only its operand on each call: the
+    /// reader <paramref name="register"/> returns for an upper-case register name (or SCANLINE,
+    /// VCOUNTER, HCOUNTER, FRAME), or a <paramref name="memory"/> byte.
+    /// </summary>
+    public Func<bool> Compile(Func<string, Func<long>> register, Func<ushort, byte> memory)
+    {
+        Func<long> actual;
+        if (!operand.StartsWith('[')) actual = register(operand);
+        else if (TryNumber(operand[1..^1], out var number)) { var address = checked((ushort)number); actual = () => memory(address); }
+        else { var pointer = register(operand[1..^1]); actual = () => memory(checked((ushort)pointer())); }
+        var expected = value;
         return comparison switch
         {
-            "==" => actual == value, "!=" => actual != value, "<" => actual < value,
-            "<=" => actual <= value, ">" => actual > value, ">=" => actual >= value, _ => false
+            "==" => () => actual() == expected, "!=" => () => actual() != expected, "<" => () => actual() < expected,
+            "<=" => () => actual() <= expected, ">" => () => actual() > expected, ">=" => () => actual() >= expected,
+            _ => () => false
         };
     }
+
+    private static long Register(CpuRegisters cpu, string name) => name switch
+    {
+        "A" => cpu.A, "F" => cpu.F, "B" => cpu.B, "C" => cpu.C, "D" => cpu.D, "E" => cpu.E, "H" => cpu.H, "L" => cpu.L,
+        "AF" => cpu.AF, "BC" => cpu.BC, "DE" => cpu.DE, "HL" => cpu.HL, "IX" => cpu.IX, "IY" => cpu.IY,
+        "SP" => cpu.SP, "PC" => cpu.PC, "I" => cpu.I, "R" => cpu.R,
+        _ => throw new ArgumentException($"Unknown register: {name}.")
+    };
 
     public object Describe() => new
     {

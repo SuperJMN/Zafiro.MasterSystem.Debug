@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/Sms.Debug.Benchmarks/Sms.Debug.Benchmarks.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/Sms.Debug.Core/Sms.Debug.Core.csproj" />
     <Project Path="src/Sms.Debug.Emulator/Sms.Debug.Emulator.csproj" />
