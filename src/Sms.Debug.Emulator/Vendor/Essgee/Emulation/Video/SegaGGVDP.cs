@@ -53,7 +53,8 @@ namespace Essgee.Emulation.Video
 
 		protected override void PrepareRenderScreen()
 		{
-			OnRenderScreen(new RenderScreenEventArgs(Viewport.Width, Viewport.Height, outputFramebuffer.Clone() as byte[]));
+			FrameRendered?.Invoke();
+			if (HasRenderScreenSubscribers) OnRenderScreen(new RenderScreenEventArgs(Viewport.Width, Viewport.Height, outputFramebuffer.Clone() as byte[]));
 		}
 
 		private bool ModifyAndVerifyCoordinates(ref int x, ref int y)

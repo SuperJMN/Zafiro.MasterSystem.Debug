@@ -206,6 +206,7 @@ namespace Essgee.Emulation.Audio
 				{
 					GenerateSample();
 					SampleObserver?.Invoke(mixedSampleBuffer.TakeLast(numOutputChannels).ToArray());
+					MonoSampleObserver?.Invoke(mixedSampleBuffer[^1]);
 					sampleCycleCount -= (int)Math.Round(clockRate);
 				}
 				dividerCount++;
@@ -221,7 +222,7 @@ namespace Essgee.Emulation.Audio
 
 			if (mixedSampleBuffer.Count >= (samplesPerFrame * numOutputChannels))
 			{
-				OnEnqueueSamples(new EnqueueSamplesEventArgs(
+				if (EnqueueSamples != null) OnEnqueueSamples(new EnqueueSamplesEventArgs(
 					numChannels,
 					channelSampleBuffer.Select(x => x.ToArray()).ToArray(),
 					new bool[] { !channel1ForceEnable, !channel2ForceEnable, !channel3ForceEnable, !channel4ForceEnable },

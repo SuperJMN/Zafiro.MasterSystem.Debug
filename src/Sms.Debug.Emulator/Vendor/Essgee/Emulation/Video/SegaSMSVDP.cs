@@ -447,7 +447,8 @@ namespace Essgee.Emulation.Video
 
 		protected override void PrepareRenderScreen()
 		{
-			OnRenderScreen(new RenderScreenEventArgs(numVisiblePixels, numVisibleScanlines, outputFramebuffer.Clone() as byte[]));
+			FrameRendered?.Invoke();
+			if (HasRenderScreenSubscribers) OnRenderScreen(new RenderScreenEventArgs(numVisiblePixels, numVisibleScanlines, outputFramebuffer.Clone() as byte[]));
 		}
 
 		protected override byte ReadVram(ushort address)

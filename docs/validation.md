@@ -20,7 +20,7 @@ portable to Windows.
 dotnet test sms-debug-mcp.slnx -c Release -m:4
 ```
 
-**37 tests** pass with none skipped. They drive generated, redistributable ROM bytes
+**52 tests** pass with none skipped. They drive generated, redistributable ROM bytes
 through the real Z80, VDP, PSG and YM2413 rather than test doubles, plus one outer
 process speaking MCP `initialize`, `tools/list` and `tools/call` over stdio.
 Assertions cover memory/register changes, pixels, WAV data, noise/stereo routing,
@@ -92,6 +92,29 @@ soundtrack of an `fm: false` session; both WAVs are kept locally for listening i
 Release build, Wonder Boy in Monster Land, 1,200 frames through `run_frame`:
 **280 fps** without FM and **232 fps** with the YM2413, about 4× real time, so a
 600-frame request finishes in under 3 seconds, well within the 15-second limit.
+
+### Run-loop overhead
+
+`benchmarks/Sms.Debug.Benchmarks` runs 300 frames of a generated ROM that streams 64
+VRAM bytes and updates 256 RAM bytes per loop. Figures are steady state, after one
+warm-up frame. Measured on 2026-10-04 on a Linux x64 machine at load 8–9 on 8 cores,
+alternating runs of both builds:
+
+```bash
+dotnet run -c Release --project benchmarks/Sms.Debug.Benchmarks -- 300
+```
+
+| Scenario | Before: ms/frame | Before: B/instr | After: ms/frame | After: B/instr |
+| --- | ---: | ---: | ---: | ---: |
+| No watchpoints | 2.9–3.2 | 296 | 2.0–2.1 | 0.07 |
+| 10 watchpoints and a breakpoint, none hit | 3.5–4.0 | 296 | 2.1–2.2 | 0.08 |
+| Run to `SCANLINE == 27` | 3.5–4.4 | 512 | 2.0–2.1 | 0.53 |
+| RetroSharp frame loop, stopping on each VRAM write | 3.7 | 331 | 2.1–2.3 | 20 |
+| The same loop with `TraceWritesUntilScanline` | — | — | 2.2–2.3 | 7 |
+
+In the last two rows, the remaining allocations are the `BusAccess` records each
+watched write returns. Once the run loop is cheap, the VDP's per-pixel Mode 4
+background renderer takes more than half of the time.
 
 Reports with ROM hashes, PNGs and WAVs are in local `artifacts/qualification-*`
 folders, which are ignored by Git and excluded from packages. No commercial ROMs

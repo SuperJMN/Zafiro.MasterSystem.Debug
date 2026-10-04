@@ -44,6 +44,9 @@ namespace Essgee.Emulation.Video
 
 		public virtual event EventHandler<RenderScreenEventArgs> RenderScreen;
 		public virtual void OnRenderScreen(RenderScreenEventArgs e) { RenderScreen?.Invoke(this, e); }
+		// Lets the debugger count frames without paying for a framebuffer copy nobody reads.
+		public Action FrameRendered;
+		protected bool HasRenderScreenSubscribers => RenderScreen != null;
 
 		public virtual event EventHandler<EventArgs> EndOfScanline;
 		public virtual void OnEndOfScanline(EventArgs e) { EndOfScanline?.Invoke(this, e); }
@@ -345,7 +348,8 @@ namespace Essgee.Emulation.Video
 
 		protected virtual void PrepareRenderScreen()
 		{
-			OnRenderScreen(new RenderScreenEventArgs(numVisiblePixels, numVisibleScanlines, outputFramebuffer.Clone() as byte[]));
+			FrameRendered?.Invoke();
+			if (HasRenderScreenSubscribers) OnRenderScreen(new RenderScreenEventArgs(numVisiblePixels, numVisibleScanlines, outputFramebuffer.Clone() as byte[]));
 		}
 
 		protected virtual void ClearScreenUsage()

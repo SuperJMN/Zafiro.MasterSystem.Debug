@@ -33,7 +33,8 @@ internal sealed class SmsMachine
     public long Cycles, Instructions, Frames;
     public ushort InstructionPc;
     public int InstructionBank;
-    public Action<BusAccess>? AccessObserver;
+    // Set only while a run observes the bus; a reference, so snapshots never capture it.
+    public BusMonitor? Monitor;
 
     public SmsMachine(byte[] rom, string mapper, string standard, bool gameGear, bool fm)
     {
@@ -62,12 +63,12 @@ internal sealed class SmsMachine
         Cpu.Startup();
         Vdp.Startup();
         Psg.Startup();
-        Vdp.RenderScreen += (_, _) => Frames++;
+        Vdp.FrameRendered = () => Frames++;
         if (fm && !gameGear)
         {
             // The YM2413 shares the Z80 clock; it is advanced once per PSG output sample so both chips stay in phase.
             Fm = new Opll((uint)Math.Round(clock / 3), SampleRate);
-            Psg.SampleObserver = MixSample;
+            Psg.MonoSampleObserver = MixSample;
         }
     }
 
@@ -89,11 +90,11 @@ internal sealed class SmsMachine
         }
     }
 
-    private void MixSample(short[] psg)
+    private void MixSample(short psg)
     {
         var fm = Fm!.Calc();
         if (sampleObserver == null) return;
-        var mixed = (PsgAudible ? psg[0] : 0) + (FmAudible ? fm * FmGain : 0);
+        var mixed = (PsgAudible ? psg : 0) + (FmAudible ? fm * FmGain : 0);
         sampleObserver([(short)Math.Clamp(mixed, short.MinValue, short.MaxValue)]);
     }
 
@@ -116,13 +117,21 @@ internal sealed class SmsMachine
         ? ((MemoryControl & 0x10) == 0 ? Ram[address & 0x1FFF] : (byte)0xFF)
         : ((MemoryControl & 0x40) == 0 ? Cartridge.Read(address) : (byte)0xFF);
 
-    private void Access(string space, int address, byte value, string kind) => AccessObserver?.Invoke(
-        new(space, address, value, kind, InstructionPc, InstructionBank, Cycles, Frames, Vdp.CurrentScanline));
+    public BusAccess Describe(BusSpace space, int address, byte value, bool write) => new(BusMonitor.Name(space), address, value,
+        write ? "write" : "read", InstructionPc, InstructionBank, Cycles, Frames, Vdp.CurrentScanline);
+
+    private void Write(BusSpace space, int address, byte value) => Monitor?.OnAccess(space, address, value, true);
+
+    // Reads matter only to read watchpoints, so opcode and operand fetches skip the monitor otherwise.
+    private void Read(BusSpace space, int address, byte value)
+    {
+        if (Monitor is { ObserveReads: true } monitor) monitor.OnAccess(space, address, value, false);
+    }
 
     private byte ReadCpu(ushort address)
     {
         var value = PeekCpu(address);
-        Access("cpu", address, value, "read");
+        Read(BusSpace.Cpu, address, value);
         return value;
     }
 
@@ -135,7 +144,7 @@ internal sealed class SmsMachine
     private void WriteCpu(ushort address, byte value)
     {
         PokeCpu(address, value);
-        Access("cpu", address, value, "write");
+        Write(BusSpace.Cpu, address, value);
     }
 
     private byte ControllerPort(bool second)
@@ -174,7 +183,7 @@ internal sealed class SmsMachine
             0xC1 => ControllerPort(true),
             _ => 0xFF
         };
-        Access("io", port, value, "read");
+        Read(BusSpace.Io, port, value);
         return value;
     }
 
@@ -198,20 +207,20 @@ internal sealed class SmsMachine
                 break;
             case 0x40: case 0x41: Psg.WritePort(port, value); break;
             case 0x80: case 0x81:
-                var state = Vdp.InspectState();
+                var code = Vdp.DebugCode; var address = Vdp.DebugAddress; var latchPending = Vdp.DebugControlLatchPending;
                 Vdp.WritePort(port, value);
                 if ((port & 1) == 0)
-                    Access(state.Code == 3 ? "cram" : "vram", state.Address & (state.Code == 3 ? (GameGear ? 63 : 31) : 16383), value, "write");
-                else if (state.ControlLatchPending && (value & 0xC0) == 0x80 && (value & 15) < 11)
-                    Access("vdp", value & 15, Vdp.DebugRegisters[value & 15], "write");
+                    Write(code == 3 ? BusSpace.Cram : BusSpace.Vram, address & (code == 3 ? (GameGear ? 63 : 31) : 16383), value);
+                else if (latchPending && (value & 0xC0) == 0x80 && (value & 15) < 11)
+                    Write(BusSpace.Vdp, value & 15, Vdp.DebugRegisters[value & 15]);
                 break;
         }
-        Access("io", port, value, "write");
+        Write(BusSpace.Io, port, value);
     }
 
     public int Step()
     {
-        InstructionPc = Cpu.InspectRegisters().PC;
+        InstructionPc = Cpu.DebugPc;
         InstructionBank = BankAt(InstructionPc);
         Cpu.SetInterruptLine(InterruptType.Maskable, Vdp.InterruptLine);
         var cycles = Cpu.Step();
