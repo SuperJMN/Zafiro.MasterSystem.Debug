@@ -17,7 +17,7 @@ portable to Windows.
 ## Automated tests
 
 ```bash
-dotnet test sms-debug-mcp.slnx -c Release -m:4
+dotnet test Zafiro.MasterSystem.Debug.slnx -c Release -m:4
 ```
 
 **52 tests** pass with none skipped. They drive generated, redistributable ROM bytes
@@ -95,13 +95,13 @@ Release build, Wonder Boy in Monster Land, 1,200 frames through `run_frame`:
 
 ### Run-loop overhead
 
-`benchmarks/Sms.Debug.Benchmarks` runs 300 frames of a generated ROM that streams 64
+`benchmarks/Zafiro.MasterSystem.Debug.Benchmarks` runs 300 frames of a generated ROM that streams 64
 VRAM bytes and updates 256 RAM bytes per loop. Figures are steady state, after one
 warm-up frame. Measured on 2026-10-04 on a Linux x64 machine at load 8–9 on 8 cores,
 alternating runs of both builds:
 
 ```bash
-dotnet run -c Release --project benchmarks/Sms.Debug.Benchmarks -- 300
+dotnet run -c Release --project benchmarks/Zafiro.MasterSystem.Debug.Benchmarks -- 300
 ```
 
 | Scenario | Before: ms/frame | Before: B/instr | After: ms/frame | After: B/instr |

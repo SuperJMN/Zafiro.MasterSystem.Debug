@@ -2,29 +2,29 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
-    <AssemblyName>Sms.Mcp</AssemblyName>
+    <AssemblyName>Zafiro.MasterSystem.Debug.Mcp</AssemblyName>
     <PackAsTool>true</PackAsTool>
-    <ToolCommandName>smsmcp</ToolCommandName>
-    <PackageId>Sms.Mcp</PackageId>
-    <Title>Sms.Mcp</Title>
+    <ToolCommandName>zafiro-mastersystem-debug-mcp</ToolCommandName>
+    <PackageId>Zafiro.MasterSystem.Debug.Mcp</PackageId>
+    <Title>Zafiro.MasterSystem.Debug.Mcp</Title>
     <Description>Fully managed, cross-platform MCP server for debugging Sega Master System and Game Gear ROMs: Z80 stepping, conditional breakpoints, watchpoints, VDP graphics, correlated observation and PSG/YM2413 WAV audio over the Model Context Protocol.</Description>
     <Authors>SuperJMN</Authors>
     <Company>José Manuel Nieto (@SuperJMN)</Company>
-    <Product>Sms.Mcp</Product>
+    <Product>Zafiro.MasterSystem.Debug.Mcp</Product>
     <PackageTags>mcp;model-context-protocol;sega;master-system;game-gear;sms;debugger;emulator;ai</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <RepositoryUrl>https://github.com/SuperJMN/sms-debug-mcp</RepositoryUrl>
-    <PackageProjectUrl>https://github.com/SuperJMN/sms-debug-mcp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/SuperJMN/Zafiro.MasterSystem.Debug</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/SuperJMN/Zafiro.MasterSystem.Debug</PackageProjectUrl>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../Sms.Debug.Emulator/Sms.Debug.Emulator.csproj" />
+    <ProjectReference Include="../Zafiro.MasterSystem.Debug.Emulator/Zafiro.MasterSystem.Debug.Emulator.csproj" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.9" />
     <PackageReference Include="ModelContextProtocol" Version="1.4.0" />
     <None Include="../../README.md" Pack="true" PackagePath="" />
     <None Include="../../THIRD-PARTY-NOTICES.md" Pack="true" PackagePath="" />
-    <None Include="../Sms.Debug.Emulator/Vendor/Essgee/LICENSE.txt" Pack="true" PackagePath="ESSGEE-LICENSE.txt" />
-    <None Include="../Sms.Debug.Emulator/Vendor/Emu2413/LICENSE.txt" Pack="true" PackagePath="EMU2413-LICENSE.txt" />
+    <None Include="../Zafiro.MasterSystem.Debug.Emulator/Vendor/Essgee/LICENSE.txt" Pack="true" PackagePath="ESSGEE-LICENSE.txt" />
+    <None Include="../Zafiro.MasterSystem.Debug.Emulator/Vendor/Emu2413/LICENSE.txt" Pack="true" PackagePath="EMU2413-LICENSE.txt" />
   </ItemGroup>
 </Project>

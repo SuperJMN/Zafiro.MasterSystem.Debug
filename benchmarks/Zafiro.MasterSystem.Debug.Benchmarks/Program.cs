@@ -1,9 +1,9 @@
 using System.Diagnostics;
-using Sms.Debug.Emulator;
+using Zafiro.MasterSystem.Debug.Emulator;
 
 // Measures the run loop with nothing observed, with watchpoints that never match, and with the
 // frame loop RetroSharp's MasterSystemTestMachine drives. Run in Release:
-//   dotnet run -c Release --project benchmarks/Sms.Debug.Benchmarks -- [frames]
+//   dotnet run -c Release --project benchmarks/Zafiro.MasterSystem.Debug.Benchmarks -- [frames]
 var frames = args.Length > 0 ? int.Parse(args[0]) : 300;
 var rom = StreamingRom();
 

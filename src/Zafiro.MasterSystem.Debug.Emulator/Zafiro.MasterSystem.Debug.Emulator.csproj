@@ -2,19 +2,19 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <IsPackable>true</IsPackable>
-    <PackageId>Sms.Debug.Emulator</PackageId>
-    <Description>Fully managed, headless Sega Master System / Game Gear emulator and debug session behind Sms.Mcp: Z80, VDP, SN76489 PSG and YM2413 FM, with ROM loading, frame stepping, programmed input, memory/VDP inspection, screen capture, breakpoints, watchpoints and write traces. Usable from tests without the MCP server.</Description>
+    <PackageId>Zafiro.MasterSystem.Debug.Emulator</PackageId>
+    <Description>Fully managed, headless Sega Master System / Game Gear emulator and debug session behind Zafiro.MasterSystem.Debug.Mcp: Z80, VDP, SN76489 PSG and YM2413 FM, with ROM loading, frame stepping, programmed input, memory/VDP inspection, screen capture, breakpoints, watchpoints and write traces. Usable from tests without the MCP server.</Description>
     <PackageTags>sega;master-system;game-gear;sms;z80;emulator;debugger;headless;testing</PackageTags>
     <Authors>SuperJMN</Authors>
     <Company>José Manuel Nieto (@SuperJMN)</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <RepositoryUrl>https://github.com/SuperJMN/sms-debug-mcp</RepositoryUrl>
-    <PackageProjectUrl>https://github.com/SuperJMN/sms-debug-mcp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/SuperJMN/Zafiro.MasterSystem.Debug</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/SuperJMN/Zafiro.MasterSystem.Debug</PackageProjectUrl>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../Sms.Debug.Core/Sms.Debug.Core.csproj" />
+    <ProjectReference Include="../Zafiro.MasterSystem.Debug.Core/Zafiro.MasterSystem.Debug.Core.csproj" />
     <Compile Update="Vendor/**/*.cs"><Nullable>disable</Nullable></Compile>
     <None Include="../../README.md" Pack="true" PackagePath="" />
     <None Include="../../THIRD-PARTY-NOTICES.md" Pack="true" PackagePath="" />

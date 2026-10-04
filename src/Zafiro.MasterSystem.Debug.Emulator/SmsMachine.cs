@@ -5,9 +5,9 @@ using Essgee.Emulation.Cartridges;
 using Essgee.Emulation.Cartridges.Sega;
 using Essgee.Emulation.CPU;
 using Essgee.Emulation.Video;
-using Sms.Debug.Core;
+using Zafiro.MasterSystem.Debug.Core;
 
-namespace Sms.Debug.Emulator;
+namespace Zafiro.MasterSystem.Debug.Emulator;
 
 internal sealed class SmsMachine
 {

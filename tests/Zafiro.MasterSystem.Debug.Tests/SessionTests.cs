@@ -1,9 +1,9 @@
 using System.Text.Json;
-using Sms.Debug.Core;
-using Sms.Debug.Emulator;
-using Sms.Debug.Mcp;
+using Zafiro.MasterSystem.Debug.Core;
+using Zafiro.MasterSystem.Debug.Emulator;
+using Zafiro.MasterSystem.Debug.Mcp;
 
-namespace Sms.Debug.Tests;
+namespace Zafiro.MasterSystem.Debug.Tests;
 
 public sealed class SessionTests
 {

@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 
-namespace Sms.Debug.Core;
+namespace Zafiro.MasterSystem.Debug.Core;
 
 public sealed partial class Condition
 {

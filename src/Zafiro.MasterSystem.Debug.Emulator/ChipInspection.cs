@@ -1,5 +1,5 @@
 using Essgee.Emulation;
-using Sms.Debug.Core;
+using Zafiro.MasterSystem.Debug.Core;
 
 namespace Essgee.Emulation.CPU
 {
